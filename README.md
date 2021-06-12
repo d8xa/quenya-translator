@@ -1,1 +1,1 @@
-# CRYPTO-AN
+# quenya-translator
