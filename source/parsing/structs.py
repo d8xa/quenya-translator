@@ -94,6 +94,6 @@ PATTERNS = FullStruct({
         "rtrim" : re.compile(r"\s+$", flags=re.I), #
 #        "sep_ignore" : re.compile(r"\[(?:[^\]\d]*\d+[^\]\d]+|[^\]\d]+\d+[^\]\d]*)\]") #
         "sep_ignore" : re.compile(r"\[[^\]]*\d+\s+[^\]]*\]"), #
-        "annotation" : re.compile(r"\[[^\]]*\]") #
+        "cleanup" : re.compile(r"\[[^\]]*\]|\*|[\t\n]+") #
     },
 })

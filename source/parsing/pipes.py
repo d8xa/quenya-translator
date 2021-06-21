@@ -137,7 +137,7 @@ class DataframeTransformer():
                 for k in range(len(doc.verses[j*2])):
                     for shift in range(2): # add both languages with same (i,j,k)
                         text.append(doc.verses[j*2+shift][k].text)
-                        lang.append(doc.verses[j*2+shift][k].tags["lang"])
+                        lang.append(str(doc.verses[j*2+shift][k].tags["lang"]))
                         I.append(i)
                         J.append(j)
                         K.append(k)
@@ -160,29 +160,28 @@ class DataframeTransformer():
         return df.reset_index().drop("index", axis=1)          
 
     
-class AnnotationRemover():
-    """Removes all annotations in brackets from the text."""
+class CleanupStep():
+    """Removes all annotations or extra whitespace from the text."""
     
     def process(self, target):
         self.validate_input(target)
         
         id_columns = [c for c in target.columns if c.startswith("nr")]
-
-        # v1, takes very long.
-        #target["text"] = target["text"].apply(
-        #    lambda x: re.sub(PATTERNS.verses.annotation, "", x)
-        #)
-        #g = target.groupby(id_columns)
-        #target = g.filter(predicate)
         
         # v2
         candidates = target.text.apply(
-            lambda x: re.search(PATTERNS.verses.annotation, x) is not None
+            lambda x: (
+                re.search(PATTERNS.verses.cleanup, x) is not None
+                or re.search(r"\s{2,}", x) is not None
+            )
         ) # look up replacement candidate locations.
-        target.loc[candidates, "text"] = target[candidates].text.apply(
-            lambda x: re.sub(PATTERNS.verses.annotation, "", x)
+        target.loc[candidates, "text"] = target[candidates].text.str.replace(
+            PATTERNS.verses.cleanup, "" # remove annotation, tabs and newlines
+        ).str.replace(
+            r"\s{2,}", " " # replace extra whitespace with single whitespace.
         ) # replace text at candidates.
-        # of candidates, check if any text field empty or whitespace only
+
+        # of these candidates, check if any text field is empty or whitespace only
         drop = target.loc[candidates].text.apply(lambda x:
             len(x)==0 # any text field empty
             or 
@@ -199,7 +198,67 @@ class AnnotationRemover():
         assert type(target) is pd.DataFrame, "input must be a DataFrame."
         assert "text" in target.columns, "input must have a column \'text\'."
 
+
+        
+class ParallelCorpusTransformer():
+    def process(self, target):
+        self.validate_input(target)
+
+        g = target.groupby("language", axis=0)
+        
+        parallel = pd.DataFrame({
+            str(Language.ENGLISH) : g.get_group(str(Language.ENGLISH)).reset_index().drop("index", axis=1).text,
+            str(Language.QUENYA) : g.get_group(str(Language.ENGLISH)).reset_index().drop("index", axis=1).text
+        })
+
+        return parallel
+
+    def validate_input(self, target):
+        assert type(target) is pd.DataFrame, "input must be a DataFrame."
+        assert all([c in  target.columns for c in ["text", "language"]]), "input must have columns \'text\' and \'language\'."
+        
+
+class TrainTestValSplitter():
+    def __init__(self, train=0.75, test=0.1, val=0.15, random_state=1, 
+                 stratify_function=None,
+                 **kwargs
+                ):
+        self.random_state = random_state
+        self.train_ratio = train
+        self.test_ratio = test
+        self.val_ratio = val
+        self.kwargs = kwargs
+        self.stratify_function = stratify_function
+        
+    def process(self, target):
+        from sklearn.model_selection import train_test_split
+
+        strata = None
+        if self.stratify_function is not None:
+            strata = self.stratify_function(target)
+        
+        train, rest = train_test_split(target, test_size=1-self.train_ratio, 
+            random_state=self.random_state, stratify=strata, **self.kwargs)
+        
+        if strata is not None:
+            strata = self.stratify_function(rest)
+
+        val, test = train_test_split(rest, test_size=self.test_ratio/(self.test_ratio + self.val_ratio), 
+            random_state=self.random_state, stratify=strata, **self.kwargs)
     
+        return train, test, val
+
+    
+class FunctionStep():
+    def __init__(self, function):
+        self.function = function
+        
+    def process(self, target):
+        self.function(target)
+        return target
+
+
+        
 ####################
 # Debugging classes:
 

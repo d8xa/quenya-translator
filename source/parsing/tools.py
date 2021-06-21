@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 
 
 def trim_span(span, text, left_patterns=[], right_patterns=[]):
@@ -71,3 +72,20 @@ def spans_between(spans, length, offset=0):
             result = result +[(spans[-1][1],length)]
 
     return [slice(a+offset, b+offset) for (a,b) in result]
+
+
+
+def save_dfs(dfs, folder, filenames):
+    folder.mkdir(exist_ok=True)
+    
+    for df,filename in zip(dfs, filenames):
+        filepath = Path(folder, f"{filename}.tsv")
+        df.to_csv(filepath, sep="\t", index=None)
+        
+def read_txts(paths):
+    texts = []
+    for path in paths:
+        with path.open("rb") as f:
+            texts.append(f.read().decode())
+            
+    return texts
