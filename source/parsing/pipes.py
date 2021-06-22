@@ -208,7 +208,7 @@ class ParallelCorpusTransformer():
         
         parallel = pd.DataFrame({
             str(Language.ENGLISH) : g.get_group(str(Language.ENGLISH)).reset_index().drop("index", axis=1).text,
-            str(Language.QUENYA) : g.get_group(str(Language.ENGLISH)).reset_index().drop("index", axis=1).text
+            str(Language.QUENYA) : g.get_group(str(Language.QUENYA)).reset_index().drop("index", axis=1).text
         })
 
         return parallel
