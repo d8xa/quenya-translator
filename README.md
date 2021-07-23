@@ -7,7 +7,8 @@ An attempt to use machine translation to translate between the low-resource arti
 
 Usage:
 ```bash
-python preprocess.py [-h] [--outdir PATH] [--punct {keep,pad,remove}] [--split TRAIN TEST VAL] [--seed SEED] [-uncase]
+python preprocess.py [-h] [--outdir PATH] [--punct {keep,pad,remove}] 
+                     [--split TRAIN TEST VAL] [--seed SEED] [-uncase]
                      [-stratify]
                      [source directory]
 ```
