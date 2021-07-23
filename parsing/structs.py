@@ -96,4 +96,13 @@ PATTERNS = FullStruct({
         "sep_ignore" : re.compile(r"\[[^\]]*\d+\s+[^\]]*\]"), #
         "cleanup" : re.compile(r"\[[^\]]*\]|\*|[\t\n]+") #
     },
+    "general" : {
+        "punctuation" : {
+            "repeated" : re.compile(r"([.,!?:;“”«»\"])([.,!?:;“”«»\"])"), #
+            "inside" : re.compile(r"(\S)([.,!?:;“”«»\"])(\S)"), #
+            "ws_left" : re.compile(r"(\s+)([.,!?:;“”«»\"-])(\S)"), #
+            "ws_right" : re.compile(r"(\S)([.,!?:;“”«»\"-])(\s+)"), #
+            "end" : re.compile(r"(\S)([.,!?:;“”«»\"-])$"), #
+        }
+    }
 })

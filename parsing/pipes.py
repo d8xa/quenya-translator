@@ -104,6 +104,7 @@ class ParagraphLanguageTagger():
 
 class VerseLanguageTagger():
     """Tags each verse TextSpan object with the respective language of the surrounding paragraph (i.e. the parent TextSpan)."""
+    
     def process(self, target):
         self.validate_input(target)
         
@@ -177,8 +178,10 @@ class CleanupStep():
         ) # look up replacement candidate locations.
         target.loc[candidates, "text"] = target[candidates].text.str.replace(
             PATTERNS.verses.cleanup, "" # remove annotation, tabs and newlines
+            , regex=True
         ).str.replace(
             r"\s{2,}", " " # replace extra whitespace with single whitespace.
+            , regex=True
         ) # replace text at candidates.
 
         # of these candidates, check if any text field is empty or whitespace only
@@ -197,8 +200,63 @@ class CleanupStep():
     def validate_input(self, target):
         assert type(target) is pd.DataFrame, "input must be a DataFrame."
         assert "text" in target.columns, "input must have a column \'text\'."
+        
+        
+        
+class PunctuationPreprocessing():
+    def __init__(self, method=None):
+        self.method = method
+    
+    def process(self, target):
+        self.validate_input(target)
+        
+        if self.method=="pad":
+            mapping = [
+                (PATTERNS.general.punctuation.repeated, r"\g<1> \g<2>"), # for consecutive punct.
+                (PATTERNS.general.punctuation.inside, r"\g<1> \g<2> \g<3>"), # for inbetween punct.
+                (PATTERNS.general.punctuation.ws_left, r"\g<1>\g<2> \g<3>"), # for punct with whitespace on the left.
+                (PATTERNS.general.punctuation.ws_right, r"\g<1> \g<2>\g<3>"), # for punct with whitespace on the right.
+                (PATTERNS.general.punctuation.end, r"\g<1> \g<2>"), # for punct at EOS.
+            ]
+        elif self.method=="remove":
+            mapping = [
+                (PATTERNS.general.punctuation.repeated, ""), # for consecutive punct.
+                (PATTERNS.general.punctuation.inside, r"\g<1> \g<2> \g<3>"), # for inbetween punct.
+                (PATTERNS.general.punctuation.ws_left, r" \g<3>"), # for punct with whitespace on the left.
+                (PATTERNS.general.punctuation.ws_right, r"\g<1> "), # for punct with whitespace on the right.
+                (PATTERNS.general.punctuation.end, r"\g<1>"), # for punct at EOS.
+            ]
+        else:
+            return target
+        
+        for pattern,replacement in mapping:
+            target.text = target.text.apply(PunctuationPreprocessing.replace_all, pattern=pattern, replacement=replacement)
+        
+        return target
 
 
+    def replace_all(text, pattern, replacement):
+        m = pattern.search(text)
+        while m:
+            text = pattern.sub(replacement, text)
+            m = pattern.search(text)
+        return text
+    
+    def validate_input(self, target):
+        assert type(target) is pd.DataFrame, "input must be a DataFrame."
+        assert "text" in target.columns, "input must have a column \'text\'."
+        
+        
+class Uncase():
+    def process(self, target):
+        self.validate_input(target)
+        
+        target.text = target.text.str.lower()
+        return target
+
+    def validate_input(self, target):
+        assert type(target) is pd.DataFrame, "input must be a DataFrame."
+        assert "text" in target.columns, "input must have a column \'text\'."
         
 class ParallelCorpusTransformer():
     def process(self, target):
@@ -247,8 +305,8 @@ class TrainTestValSplitter():
             random_state=self.random_state, stratify=strata, **self.kwargs)
     
         return train, test, val
-
     
+
 class FunctionStep():
     def __init__(self, function):
         self.function = function
@@ -256,7 +314,6 @@ class FunctionStep():
     def process(self, target):
         self.function(target)
         return target
-
 
         
 ####################

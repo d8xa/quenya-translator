@@ -74,6 +74,12 @@ def spans_between(spans, length, offset=0):
     return [slice(a+offset, b+offset) for (a,b) in result]
 
 
+def stratify_wordcount(data):
+    import pandas as pd
+    """Stratify by word count."""
+    wordcount = data.applymap(lambda x: x.count(" ")).mean(axis=1) # mean of word count for each verse pair.
+    return pd.cut(wordcount, 4, labels=False) # into bins.
+
 
 def save_dfs(dfs, folder, filenames):
     folder.mkdir(exist_ok=True)
