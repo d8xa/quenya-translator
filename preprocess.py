@@ -2,7 +2,9 @@ import argparse, logging, os, sys
 from pathlib import Path
 import parsing.pipes as pipes
 from parsing.structs import Pipeline
-from parsing.tools import stratify_wordcount
+from parsing.tools import stratify_wordcount, read_txts
+from argparse import Namespace
+
 
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -13,34 +15,27 @@ logging.basicConfig(
 logger = logging.getLogger("quenya_tranlation.preprocess")
 
 
-
-def main(args):
-    try: 
-        args_digest(args)
-    except ValueError as error:
-        logger.error(error)
-        #raise
-
-    # TODO
+def preprocess(args):
     # Read files
-    from parsing.tools import read_txts
     txtfiles = [file for file in args.sourcedir.iterdir() if file.suffix==".txt"]
     texts = read_txts(txtfiles)
     logger.info(f"Read text from {len(txtfiles)} files.")
     
+    # Build and run pipeline
     components = build_components(args)
-    pipeline = Pipeline(components)
-    
+    pipeline = Pipeline(components)    
     processed = pipeline.process(texts)
     logger.info("Preprocessing done.")
     
+    # Save result
     save_corpora(processed, args)
     logger.info("Preprocessed files saved to output directory.")
-    
+
+
 def save_corpora(target, args):
     """Save preprocessed data to files."""
     
-    if args.split:
+    if args.split is not None:
         save_params = zip(target,["train", "test", "val"])
     else:
         save_params = zip(target, ["corpus"])
@@ -51,9 +46,10 @@ def save_corpora(target, args):
             with path.open("w", encoding="utf-8") as f:
                 f.write("\n".join(list(data.iloc[:,i])))
 
-    
 
 def build_components(args):
+    """Arrange necessary pipeline components."""
+
     components = [
         ("create documents", pipes.DocumentMatcher()),
         ("extract paragraphs", pipes.ParagraphMatcher()),
@@ -78,12 +74,10 @@ def build_components(args):
         components += [("split dataset", splitter)]
         
     return components
-        
-    
-    
-    
-def args_digest(args):
-    """check if args collide or any args are ignored/overridden."""
+ 
+
+def digest_args(args):
+    """Validate arguments or any args are ignored/overridden."""
     
     ## stratifying when splitting is disabled 
     if args.split is None and args.stratify:
@@ -106,7 +100,7 @@ def args_digest(args):
     if args.outdir is None:
         args.outdir = Path(args.sourcedir.absolute().parent, args.sourcedir.absolute().stem+'-preprocessed')
     # Check if target path is directory.
-    if not args.outdir.exists() and not arg.outdir.suffix=='':
+    if not args.outdir.exists() and not args.outdir.suffix=='':
         raise ValueError(f"Path {args.outdir} is not a directory. Aborting.")
     # Create target dir if not existing.
     args.outdir.mkdir(parents=True, exist_ok=True)
@@ -128,17 +122,17 @@ if __name__ == '__main__':
         description='Preprocess the Quenya-English translations of the New Testament.')
 
     # Mandatory args
-    parser.add_argument('sourcedir', type=Path, nargs='?', metavar='source directory',
+    parser.add_argument('sourcedir', type=Path, nargs='?', metavar='INPUT DIRECTORY',
                         help='the path of the directory containing the files to preprocess.')
     
     # Optional args
-    parser.add_argument('--outdir', dest='outdir', metavar='PATH', type=Path, 
+    parser.add_argument('--outdir', dest='outdir', metavar='OUTPUT DIRECTORY', type=Path, 
                         help='the directory where the preprocessed files should be placed. If not specified, the source directory with suffix \'-preprocessed\' will be used.')
     parser.add_argument('--punct', choices=['keep', 'pad', 'remove'], default='keep', dest='punct', 
                         help='action to apply to punctuation in the data. \n\'pad\' ensures whitespace around all punctuation; \'remove\' removes all punctuation; \'keep\' (default) leaves punctuation unchanged.')
     parser.add_argument('--split', nargs=3, type=float, metavar=('TRAIN', "TEST", "VAL"), dest='split', default=None,
                         help='split the dataset into train/test/validation sets with the supplied proportions. Each set will be a separate file.')
-    parser.add_argument('--seed', help='define a random seed to be used when splitting the dataset.', dest='seed', type=int)
+    parser.add_argument('--seed', metavar="N", help='define a random seed to be used when splitting the dataset.', dest='seed', type=int)
     #parser.add_argument('--extract', choices=['verses', "phrases", "sentences"], default='verses', dest='extract', 
     #                    help='what to extract from the text.') # TODO
     
@@ -151,5 +145,11 @@ if __name__ == '__main__':
     if len(unknown)>0:
         logger.info(f"Options {unknown} were not recognized and will be ignored.")
     
-    main(args)
+    try: 
+        digest_args(args)
+    except ValueError as error:
+        logger.error(error)
+        #raise
+
+    preprocess(args)
 
