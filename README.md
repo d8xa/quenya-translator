@@ -34,42 +34,58 @@ The following modifications were performed:
 
 The following commands were used:
 
-Tokenize:
+###### Tokenization
 ```bash
-fairseq-preprocess --destdir $DATADIR/tokenized.en-qy 
-    --source-lang en --target-lang qy \
-    --trainpref $TEXTDIR/train --testpref $TEXTDIR/test --validpref $TEXTDIR/val \
-    --tokenizer moses \
-    --workers 8
+fairseq-preprocess \
+	--source-lang en \
+	--target-lang qy \
+	--trainpref $TEXTDIR/train \
+	--testpref $TEXTDIR/test \
+	--validpref $TEXTDIR/val \
+	--tokenizer moses \
+	--destdir $DATADIR \
+	--workers 4
 ```
 
-Train:
+###### Training
+
+First phase:
 ```bash
-fairseq-train \
-    $DATADIR \
-    --save-dir $MODELDIR \
-    --tensorboard-logdir $LOGDIR \
-    --arch transformer_iwslt_de_en \
-    --share-decoder-input-output-embed \
-    --optimizer adam --adam-betas (0.9,0.98)
-    --lr 1e-3 --lr-scheduler inverse_sqrt \
-    --warmup-updates 4000 \
-    --clip-norm 0.0 --dropout 0.3 --weight-decay 0.0001 \
-    --criterion label_smoothed_cross_entropy --label-smoothing 0.1 \
-    --max-tokens 4096 \
-    --eval-bleu \
-    --eval-bleu-detok moses \
-    --eval-bleu-remove-bpe \
-    --best-checkpoint-metric bleu --maximize-best-checkpoint-metric
-    --fixed-validation-seed 7
-    --keep-last-epochs 15
-    --patience 10
+fairseq-train $DATADIR \
+	--save-dir $MODELDIR \
+	--log-format json \
+	--arch transformer_iwslt_de_en \
+	--optimizer adam \
+	--adam-betas (0.9,0.98) \
+	--clip-norm 0.0 \
+	--lr 1e-3 \
+	--lr-scheduler inverse_sqrt \
+	--warmup-updates 4000 \
+	--dropout 0.3 \
+	--weight-decay 1e-4 \
+	--criterion label_smoothed_cross_entropy \
+	--label-smoothing 0.1 \
+	--max-tokens 4096 \
+	--eval-bleu \
+	--eval-bleu-detok moses \
+	--eval-bleu-remove-bpe \
+	--best-checkpoint-metric bleu \
+	--maximize-best-checkpoint-metric \
+	--max-epoch 300 \
+	--patience 10 \
+	--log-interval 100 \
+	--no-progress-bar \
+	--no-epoch-checkpoints \
+	--keep-best-checkpoints 3 \
+	--num-workers 0
 ```
+
+The command for the second phase is the same except for `--lr 1e-5` and `--restore-file $MODELDIR/checkpoint_best.pt`.
 
 Evaluate:
 ```bash
 fairseq-generate $DATADIR \
     --path $MODELDIR/checkpoint_best.pt \
-    --gen-subset test
+    --gen-subset test \
     --batch-size 128 --beam 5 --remove-bpe
 ```
