@@ -82,7 +82,10 @@ fairseq-train $DATADIR \
 
 The command for the second phase is the same except for `--lr 1e-5` and `--restore-file $MODELDIR/checkpoint_best.pt`.
 
-Evaluate:
+Training was performed on an NVIDIA RTX 2080 Ti and took on average 3380s, 142 epochs and 23s/epoch, of which approx. 60% is the first phase.
+
+
+###### Evaluation
 ```bash
 fairseq-generate $DATADIR \
     --path $MODELDIR/checkpoint_best.pt \
