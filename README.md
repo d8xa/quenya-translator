@@ -14,7 +14,7 @@ python preprocess.py [-h] [--outdir PATH] [--punct {keep,pad,remove}]
 ```
 Example:
 ```bash
-python preprocess.py data/raw --outdir data/out --punct pad --split 75 15 10 -stratify 
+python preprocess.py data/raw --outdir data/out --punct pad --split 80 10 10 -stratify 
 ```
 
 To see an explanation of all arguments, use the help option `-h`. 
@@ -92,3 +92,7 @@ fairseq-generate $DATADIR \
     --gen-subset test \
     --batch-size 128 --beam 5 --remove-bpe
 ```
+
+## The results
+
+ During testing of different preprocessing options and training parameters, model performance varied between a BLEU score of only 35 up to almost 47, averaging around 44. The best performing model achieved `BLEU4 = 44.99` on the validation set and `BLEU4 = 46.87, 75.3/55.2/41.8/32.2 (BP=0.964, ratio=0.964, syslen=15841, reflen=16428)` on the testset, using the exact commands given in this README.
