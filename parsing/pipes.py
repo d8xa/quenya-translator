@@ -193,7 +193,7 @@ class CleanupStep():
         # for group keys in drop_keys, get indices of all group members in target:
         drop_keys = target.loc[candidates][drop].groupby(id_columns).groups.keys()
         group_keys = target.groupby(id_columns).groups
-        drop_indices = pd.Int64Index([i for k in drop_keys for i in group_keys.get(k)])
+        drop_indices = pd.Index([i for k in drop_keys for i in group_keys.get(k)])
                 
         return target.drop(index=drop_indices)
         
@@ -216,6 +216,7 @@ class PunctuationPreprocessing():
                 (PATTERNS.general.punctuation.inside, r"\g<1> \g<2> \g<3>"), # for inbetween punct.
                 (PATTERNS.general.punctuation.ws_left, r"\g<1>\g<2> \g<3>"), # for punct with whitespace on the left.
                 (PATTERNS.general.punctuation.ws_right, r"\g<1> \g<2>\g<3>"), # for punct with whitespace on the right.
+                (PATTERNS.general.punctuation.start, r"\g<1> \g<2>"), # for punct at BOS.
                 (PATTERNS.general.punctuation.end, r"\g<1> \g<2>"), # for punct at EOS.
             ]
         elif self.method=="remove":
@@ -224,6 +225,7 @@ class PunctuationPreprocessing():
                 (PATTERNS.general.punctuation.inside, r"\g<1> \g<2> \g<3>"), # for inbetween punct.
                 (PATTERNS.general.punctuation.ws_left, r" \g<3>"), # for punct with whitespace on the left.
                 (PATTERNS.general.punctuation.ws_right, r"\g<1> "), # for punct with whitespace on the right.
+                (PATTERNS.general.punctuation.start, r"\g<1>"), # for punct at BOS.
                 (PATTERNS.general.punctuation.end, r"\g<1>"), # for punct at EOS.
             ]
         else:

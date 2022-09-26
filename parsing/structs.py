@@ -74,6 +74,9 @@ class Language(Enum):
         return self.name
     
     
+punct_symbols = r""".,!?:;"""
+delim_symbols = r"""“”‘’'"()«»"""
+#left_delims = r"""“'"""
 PATTERNS = FullStruct({
     "preamble" : {"bounds" : re.compile(r'\s*\n+\s*-+\s*\n+\s*', flags=re.I)}, #
     "chapters" : {
@@ -98,11 +101,12 @@ PATTERNS = FullStruct({
     },
     "general" : {
         "punctuation" : {
-            "repeated" : re.compile(r"([.,!?:;“”«»\"])([.,!?:;“”«»\"])"), #
-            "inside" : re.compile(r"(\S)([.,!?:;“”«»\"])(\S)"), #
-            "ws_left" : re.compile(r"(\s+)([.,!?:;“”«»\"-])(\S)"), #
-            "ws_right" : re.compile(r"(\S)([.,!?:;“”«»\"-])(\s+)"), #
-            "end" : re.compile(r"(\S)([.,!?:;“”«»\"-])$"), #
+            "repeated" : re.compile(r"([{}])([{}])".format(punct_symbols+delim_symbols, punct_symbols+delim_symbols)), #
+            "inside" : re.compile(r"(\S)([{}])(\S)".format(punct_symbols+delim_symbols)), #
+            "ws_left" : re.compile(r"(\s+)([{}-])(\S)".format(punct_symbols+delim_symbols)), #
+            "ws_right" : re.compile(r"(\S)([{}-])(\s+)".format(punct_symbols+delim_symbols)), #
+            "start" : re.compile(r"^([{}-])(\S)".format(punct_symbols+delim_symbols), flags=re.M), #
+            "end" : re.compile(r"(\S)([{}-])$".format(punct_symbols+delim_symbols), flags=re.M), #
         }
     }
 })

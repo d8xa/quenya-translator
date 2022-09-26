@@ -122,15 +122,15 @@ if __name__ == '__main__':
         description='Preprocess the Quenya-English translations of the New Testament.')
 
     # Mandatory args
-    parser.add_argument('sourcedir', type=Path, nargs='?', metavar='INPUT DIRECTORY',
+    parser.add_argument('sourcedir', type=Path, nargs='?', metavar='PATH',
                         help='the path of the directory containing the files to preprocess.')
     
     # Optional args
-    parser.add_argument('--outdir', dest='outdir', metavar='OUTPUT DIRECTORY', type=Path, 
+    parser.add_argument('--outdir', dest='outdir', metavar='PATH', type=Path, 
                         help='the directory where the preprocessed files should be placed. If not specified, the source directory with suffix \'-preprocessed\' will be used.')
     parser.add_argument('--punct', choices=['keep', 'pad', 'remove'], default='keep', dest='punct', 
                         help='action to apply to punctuation in the data. \n\'pad\' ensures whitespace around all punctuation; \'remove\' removes all punctuation; \'keep\' (default) leaves punctuation unchanged.')
-    parser.add_argument('--split', nargs=3, type=float, metavar=('TRAIN', "TEST", "VAL"), dest='split', default=None,
+    parser.add_argument('--split', nargs=3, type=float, metavar=('N', "N", "N"), dest='split', default=None,
                         help='split the dataset into train/test/validation sets with the supplied proportions. Each set will be a separate file.')
     parser.add_argument('--seed', metavar="N", help='define a random seed to be used when splitting the dataset.', dest='seed', type=int)
     #parser.add_argument('--extract', choices=['verses', "phrases", "sentences"], default='verses', dest='extract', 
